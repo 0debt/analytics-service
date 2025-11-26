@@ -21,16 +21,18 @@ jobs:
       - name: Install dependencies
         run: bun install
 
+      - name: Verify working directory
+        run: pwd && ls -la
+
       - name: Start server
         env:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
           NODE_ENV: test
           PORT: 3001
-        run: bun run dev &
-        continue-on-error: false
+        run: bun run src/server.ts &
 
       - name: Wait for server
-        run: sleep 5
+        run: sleep 8
 
       - name: Run tests
         env:
