@@ -19,9 +19,6 @@ jobs:
       - name: Install dependencies
         run: bun install
 
-      - name: Verify working directory
-        run: pwd && ls -la
-
       - name: Start server
         env:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
@@ -30,7 +27,17 @@ jobs:
         run: bun run src/server.ts &
 
       - name: Wait for server
-        run: sleep 8
+        run: |
+          for i in {1..10}; do
+            if curl -f http://localhost:3001/v1/health 2>/dev/null; then
+              echo "Server is ready!"
+              exit 0
+            fi
+            echo "Waiting for server... ($i/10)"
+            sleep 1
+          done
+          echo "Server failed to start"
+          exit 1
 
       - name: Run tests
         env:
