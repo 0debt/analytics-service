@@ -1,18 +1,19 @@
 import { Hono } from 'hono';
-import * as BudgetController from '../controllers/budgetController';
+import * as budgetController from '@/controllers/budgetController';
 
-const budgetsRouter = new Hono();
-// 1. RUTA BASE GET
-budgetsRouter.get('/', BudgetController.listAllBudgets); 
+function loadBudgetsV1(app: Hono) {
+  // POST / : Crear un presupuesto
+  app.post('/v1/budgets', budgetController.createBudget);
 
-budgetsRouter.get('/:budgetId/status', BudgetController.getBudgetStatus);
-// CRUD BÁSICO
-budgetsRouter.post('/', BudgetController.createBudget); // Crear (POST /budgets)
-budgetsRouter.get('/group/:groupId', BudgetController.listGroupBudgets); // Listar (GET /budgets/group/:groupId)
-budgetsRouter.put('/:budgetId', BudgetController.updateBudget); // Actualizar (PUT /budgets/:budgetId)
-budgetsRouter.delete('/:budgetId', BudgetController.deleteBudget); // Eliminar (DELETE /budgets/:budgetId)
+  // GET /group/:groupId : Listar todos los presupuestos de un grupo
+  app.get('/v1/budgets/group/:groupId', budgetController.listGroupBudgets);
 
-// Obtener estado - síncrono
-budgetsRouter.get('/:budgetId/status', BudgetController.getBudgetStatus); 
+  // PUT /:id : Modificar el límite
+  app.put('/v1/budgets/:id', budgetController.updateBudget);
 
-export default budgetsRouter;
+  // GET /:id/status : Obtener estado del presupuesto
+  app.get('/v1/budgets/:id/status', budgetController.getBudgetStatus);
+}
+
+export default loadBudgetsV1;
+
