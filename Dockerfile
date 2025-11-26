@@ -4,5 +4,5 @@ COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile --production
 COPY . .
 USER bun
-EXPOSE 3001
+EXPOSE 3000
 CMD ["bun", "run", "src/server.ts"]
