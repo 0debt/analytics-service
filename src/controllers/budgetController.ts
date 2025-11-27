@@ -1,5 +1,5 @@
 import { Context } from 'hono';
-import { Budget } from '@/models/budget';
+import { Budget } from '@/models/budgetSchema';
 import { expensesClientInstance } from '@/clients/expensesClient';
 
 // POST / : Create a budget
