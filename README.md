@@ -75,7 +75,7 @@ Start the development server with hot reload:
 bun run dev
 ```
 
-The server will start on `http://localhost:3001`
+The server will start on `http://localhost:3000`
 
 ### Production
 
@@ -203,11 +203,6 @@ analytics-service/
 ├── package.json
 └── README.md
 ```
-
-## CORS Configuration
-
-- **Production**: Only allows requests from `https://api-gateway.0debt.xyz`
-- **Development/Test**: Allows all origins
 
 ## CI/CD
 
