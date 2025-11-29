@@ -10,18 +10,7 @@ const app = new Hono();
 
 app.use('*', logger());
 
-// CORS configuration
-if (Bun.env.NODE_ENV === 'production') {
-  app.use(
-    '*',
-    cors({
-      origin: 'https://api-gateway.0debt.xyz',
-      credentials: true,
-    })
-  );
-} else {
-  app.use('*', cors()); 
-}
+app.use('*', cors()); 
 
 // OpenAPI JSON endpoint
 app.get('/docs', (c) => c.json(openApiSpec));
