@@ -31,7 +31,7 @@ app.get('/swagger', swaggerUI({ url: '/docs' }));
 
 loadBudgetsV1(app);
 
-const internalAppPort = parseInt(Bun.env.PORT || '3001');
+const internalAppPort = parseInt(Bun.env.PORT || '3000');
 const appHostname = Bun.env.NODE_ENV === 'development' ? 'localhost' : '0.0.0.0';
 
 async function startServer() {
