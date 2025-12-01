@@ -1,134 +1,118 @@
 # Analytics Service
 
-A microservice for managing budgets and analytics, built with **Bun** and **Hono**. This service provides endpoints for creating, managing, and monitoring budgets with integration to MongoDB Atlas.
+A microservice for managing budgets and analytics, built with **Bun** and **Hono**. Part of the **0debt** project.
 
 <p align="center">
-
   <img src="https://img.shields.io/badge/Runtime-Bun-black?style=flat-square&logo=bun" alt="Bun">
-
   <img src="https://img.shields.io/badge/Framework-Hono-E36002?style=flat-square&logo=hono" alt="Hono">
-
+  <img src="https://img.shields.io/badge/Database-MongoDB-47A248?style=flat-square&logo=mongodb" alt="MongoDB">
+  <img src="https://img.shields.io/badge/Cache-Redis-DC382D?style=flat-square&logo=redis" alt="Redis">
 </p>
 
 ## Features
 
 - 🚀 **Fast**: Built on Bun runtime for optimal performance
-- 📊 **Budget Management**: Create, update, and monitor budgets
-- 🔍 **Health Monitoring**: Real-time budget status tracking
+- 📊 **Budget Management**: Create, update, delete, and monitor budgets
+- 🔐 **JWT Auth**: User identification via Kong Gateway (Trust the Gateway)
+- ⚡ **Redis Cache**: Cache-Aside pattern with 60s TTL
+- 🔌 **Circuit Breaker**: Resilient integration with expenses-service (opossum)
+- 📈 **Charts**: QuickChart.io integration with Feature Toggle
+- 🔄 **SAGA Support**: Internal endpoint for distributed transactions
 - 📚 **API Documentation**: Swagger UI for interactive API testing
-- 🧪 **Testing**: Comprehensive test suite with Bun test
-- 🔒 **CORS**: Configurable CORS for production and development
+- 🧪 **Testing**: 20+ tests covering all scenarios
 
 ## Tech Stack
 
-- **Runtime**: [Bun](https://bun.sh/)
-- **Framework**: [Hono](https://hono.dev/)
-- **Database**: MongoDB (via Mongoose)
-- **Documentation**: Swagger UI / OpenAPI
+| Component | Technology |
+|-----------|------------|
+| Runtime | [Bun](https://bun.sh/) |
+| Framework | [Hono](https://hono.dev/) |
+| Database | MongoDB Atlas (Mongoose) |
+| Cache | Redis (ioredis) |
+| Resilience | Circuit Breaker (opossum) |
+| Auth | JWT decode (jwt-decode) |
 
 ## Prerequisites
 
 - [Bun](https://bun.sh/) (latest version)
 - MongoDB Atlas account or local MongoDB instance
+- Redis (optional - service works without it)
 
 ## Installation
 
-1. Clone the repository:
-```sh
+```bash
 git clone <repository-url>
 cd analytics-service
-```
-
-2. Install dependencies:
-```sh
 bun install
-```
-
-3. Create a `.env` file in the root directory:
-```env
-MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/?appName=cluster-name
-NODE_ENV=development
 ```
 
 ## Configuration
 
-### Environment Variables
+Create a `.env` file:
 
-| Variable | Description | Default | Required |
-|----------|-------------|---------|----------|
-| `MONGODB_URI` | MongoDB connection string | - | Yes |
-| `NODE_ENV` | Environment (development, test, production) | `development` | No |
+```env
+# Required
+MONGODB_URI=mongodb+srv://user:pass@cluster.mongodb.net/
+NODE_ENV=development
 
-### Database Configuration
+# Optional (graceful defaults)
+REDIS_URL=redis://localhost:6379          # Without Redis = cache disabled
+EXPENSES_SERVICE_URL=http://localhost:3001 # Without URL = mock data
+ENABLE_CHARTS=true                         # Without = feature disabled
+```
 
-The service automatically selects the database based on `NODE_ENV`:
+### Database Selection
+
+Based on `NODE_ENV`:
 - `development` → `dev` database
-- `test` → `test` database
+- `test` → `test` database  
 - `production` → `prod` database
 
 ## Usage
 
 ### Development
 
-Start the development server with hot reload:
-```sh
+```bash
 bun run dev
 ```
 
-The server will start on `http://localhost:3000`
+Server starts on `http://localhost:3000`
 
 ### Production
 
-```sh
+```bash
 NODE_ENV=production bun run src/server.ts
 ```
 
 ## API Endpoints
 
-### Health Check
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| GET | `/v1/health` | Health check | No |
+| POST | `/v1/budgets` | Create budget | **Yes** |
+| GET | `/v1/budgets/group/:groupId` | List group budgets | No |
+| PUT | `/v1/budgets/:id` | Update limit | No |
+| DELETE | `/v1/budgets/:id` | Delete budget | No |
+| GET | `/v1/budgets/:id/status` | Get status (cached) | No |
+| GET | `/v1/budgets/:id/chart` | Get chart URL | No |
+| DELETE | `/v1/internal/users/:userId` | SAGA: Delete user data | Internal |
 
-```http
-GET /v1/health
+### Create Budget (requires JWT)
+
+```bash
+curl -X POST http://localhost:3000/v1/budgets \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <jwt-token>" \
+  -d '{"groupId":"group-123","category":"Food","limitAmount":500,"period":"monthly"}'
 ```
 
-Returns the service health status.
+### Get Budget Status
 
-### Budget Management
-
-#### Create Budget
-```http
-POST /v1/budgets
-Content-Type: application/json
-
-{
-  "groupId": "group-123",
-  "category": "Food",
-  "limitAmount": 500,
-  "period": "monthly"
-}
+```bash
+curl http://localhost:3000/v1/budgets/:id/status
 ```
 
-#### List Group Budgets
-```http
-GET /v1/budgets/group/:groupId
-```
-
-#### Update Budget Limit
-```http
-PUT /v1/budgets/:id
-Content-Type: application/json
-
-{
-  "limitAmount": 750
-}
-```
-
-#### Get Budget Status
-```http
-GET /v1/budgets/:id/status
-```
-
-Returns:
+Response:
 ```json
 {
   "limit": 500,
@@ -137,46 +121,77 @@ Returns:
 }
 ```
 
-Health status values:
-- `OK`: Spent < 80% of limit
-- `WARNING`: Spent >= 80% of limit
-- `OVERBUDGET`: Spent > limit
+Health values: `OK` (<80%), `WARNING` (80-100%), `OVERBUDGET` (>100%)
+
+### Get Chart URL (Feature Toggle)
+
+```bash
+curl http://localhost:3000/v1/budgets/:id/chart
+```
+
+Response (if `ENABLE_CHARTS=true`):
+```json
+{
+  "url": "https://quickchart.io/chart?c=..."
+}
+```
+
+### SAGA: Delete User Budgets
+
+```bash
+curl -X DELETE http://localhost:3000/v1/internal/users/:userId
+```
+
+Response:
+```json
+{
+  "status": "ok",
+  "deletedCount": 3
+}
+```
+
+## Architecture
+
+See [plan-phases.md](./plan-phases.md) for detailed diagrams and implementation phases.
+
+```
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│   Client    │────▶│    Kong     │────▶│  Analytics  │
+│             │     │   Gateway   │     │   Service   │
+└─────────────┘     └─────────────┘     └──────┬──────┘
+                                               │
+                    ┌──────────────────────────┼──────────────────────────┐
+                    │                          │                          │
+                    ▼                          ▼                          ▼
+             ┌─────────────┐           ┌─────────────┐           ┌─────────────┐
+             │   MongoDB   │           │    Redis    │           │  Expenses   │
+             │   (Data)    │           │   (Cache)   │           │  Service    │
+             └─────────────┘           └─────────────┘           └─────────────┘
+```
 
 ## API Documentation
 
-### Swagger UI
-
-Once the server is running, access the interactive API documentation at:
-
-```
-http://localhost:3001/swagger
-```
-
-### OpenAPI JSON
-
-The OpenAPI specification is available at:
-
-```
-http://localhost:3001/docs
-```
+- **Swagger UI**: `http://localhost:3000/swagger`
+- **OpenAPI JSON**: `http://localhost:3000/docs`
 
 ## Testing
 
-Run the test suite:
-```sh
-bun test
+```bash
+# Start server in one terminal
+bun run dev
+
+# Run tests in another terminal
+API_URL=http://localhost:3000 bun test
 ```
 
-The test script automatically sets `NODE_ENV=test` to use the test database.
+### Test Coverage (20 tests)
 
-### Test Coverage
-
-Tests include:
-- ✅ Server health check
-- ✅ Budget creation
-- ✅ Group budget listing
-- ✅ Budget limit updates
-- ✅ Budget status retrieval
+- ✅ Health check
+- ✅ Budget CRUD operations
+- ✅ Authorization validation
+- ✅ Cache behavior (hit/miss)
+- ✅ Feature toggle (charts)
+- ✅ SAGA participation
 - ✅ Input validation
 
 ## Project Structure
@@ -185,29 +200,43 @@ Tests include:
 analytics-service/
 ├── src/
 │   ├── config/
-│   │   ├── database.ts      # MongoDB connection
+│   │   ├── database.ts       # MongoDB connection
+│   │   ├── redis.ts          # Redis connection + retry
 │   │   └── openapi.ts        # OpenAPI specification
 │   ├── controllers/
-│   │   └── budgetController.ts
-│   ├── models/
-│   │   ├── budgetSchema.ts   # Budget Mongoose schema
-│   │   └── budget.test.ts     # Test suite
-│   ├── routes/
-│   │   └── budgets.ts         # API routes
+│   │   └── budgetController.ts  # All budget handlers
+│   ├── helpers/
+│   │   └── userContext.ts    # JWT decode helper
+│   ├── services/
+│   │   └── chartService.ts   # QuickChart URL generator
 │   ├── clients/
-│   │   └── expensesClient.ts  # Expenses service client (mock)
-│   └── server.ts              # Main server file
-├── .github/
-│   └── workflows/
-│       └── test.yaml          # CI/CD workflow
+│   │   └── expensesClient.ts # Circuit Breaker client
+│   ├── models/
+│   │   ├── budgetSchema.ts   # Mongoose schema
+│   │   └── budget.test.ts    # Test suite
+│   ├── routes/
+│   │   └── budgets.ts        # Route definitions
+│   └── server.ts             # Entry point
+├── plan-phases.md            # Implementation documentation
 ├── package.json
 └── README.md
 ```
 
-## CI/CD
+## Resilience Patterns
 
-GitHub Actions workflow runs tests on every push to `main` branch. The workflow:
-1. Sets up Bun
-2. Installs dependencies
-3. Starts the server with test environment
-4. Runs the test suite
+### Circuit Breaker (expenses-service)
+
+- **Timeout**: 3 seconds
+- **Error Threshold**: 50%
+- **Reset Timeout**: 10 seconds
+- **Fallback**: Returns `null`, service continues
+
+### Cache-Aside (Redis)
+
+- **TTL**: 60 seconds
+- **Key**: `analytics:budget:spent:{groupId}`
+- **Graceful**: Works without Redis (cache disabled)
+
+## License
+
+MIT
