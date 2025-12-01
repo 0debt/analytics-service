@@ -57,7 +57,7 @@ NODE_ENV=development
 
 # Optional (graceful defaults)
 REDIS_URL=redis://localhost:6379          # Without Redis = cache disabled
-EXPENSES_SERVICE_URL=http://localhost:3001 # Without URL = mock data
+EXPENSES_SERVICE_URL=http://localhost:3000 # Without URL = mock data
 ENABLE_CHARTS=true                         # Without = feature disabled
 ```
 

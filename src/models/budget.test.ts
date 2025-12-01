@@ -1,6 +1,6 @@
 import { test, expect, afterAll, describe } from 'bun:test';
 
-const API_URL = Bun.env.API_URL || 'http://localhost:3001';
+const API_URL = Bun.env.API_URL || 'http://localhost:3000';
 
 // Test JWT token (decoded: { sub: "test-user-123", plan: "PRO" })
 const TEST_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0LXVzZXItMTIzIiwicGxhbiI6IlBSTyJ9.fake';
