@@ -1,29 +1,33 @@
 import { Hono } from 'hono';
 import * as budgetController from '@/controllers/budgetController';
 
+/**
+ * Loads budget routes onto the Hono app.
+ * @param app - Hono application instance
+ */
 function loadBudgetsV1(app: Hono) {
-  // GET /v1/health : Health check endpoint
-  app.get('/v1/health', (c) => {
-    return c.json({
-      message: 'ANALYTICS SERVICE',
-      version: '1',
-      status: 'healthy',
-      timestamp: new Date().toISOString()
+    // Health check
+    app.get('/v1/health', (c) => {
+        return c.json({
+            message: 'ANALYTICS SERVICE',
+            version: '1',
+            status: 'healthy',
+            timestamp: new Date().toISOString()
+        });
     });
-  });
 
-  // POST / : Create a budget
-  app.post('/v1/budgets', budgetController.createBudget);
+    // Budget CRUD
+    app.post('/v1/budgets', budgetController.createBudget);
+    app.get('/v1/budgets/group/:groupId', budgetController.listGroupBudgets);
+    app.put('/v1/budgets/:id', budgetController.updateBudget);
+    app.delete('/v1/budgets/:id', budgetController.deleteBudget);
 
-  // GET /group/:groupId : List all budgets for a group
-  app.get('/v1/budgets/group/:groupId', budgetController.listGroupBudgets);
+    // Budget status & charts
+    app.get('/v1/budgets/:id/status', budgetController.getBudgetStatus);
+    app.get('/v1/budgets/:id/chart', budgetController.getBudgetChart);
 
-  // PUT /:id : Update budget limit
-  app.put('/v1/budgets/:id', budgetController.updateBudget);
-
-  // GET /:id/status : Get budget status
-  app.get('/v1/budgets/:id/status', budgetController.getBudgetStatus);
+    // Internal SAGA endpoint
+    app.delete('/v1/internal/users/:userId', budgetController.deleteUserBudgets);
 }
 
 export default loadBudgetsV1;
-
