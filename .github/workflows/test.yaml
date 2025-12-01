@@ -23,13 +23,13 @@ jobs:
         env:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
           NODE_ENV: test
-          PORT: 3001
+          PORT: 3000
         run: bun run src/server.ts &
 
       - name: Wait for server
         run: |
           for i in {1..10}; do
-            if curl -f http://localhost:3001/v1/health 2>/dev/null; then
+            if curl -f http://localhost:3000/v1/health 2>/dev/null; then
               echo "Server is ready!"
               exit 0
             fi
