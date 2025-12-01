@@ -7,15 +7,26 @@ export const openApiSpec = {
   },
   servers: [
     {
-      url: 'http://localhost:3001',
+      url: 'http://localhost:3000',
       description: 'Development server',
     },
   ],
+  components: {
+    securitySchemes: {
+      bearerAuth: {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        description: 'JWT token from Kong gateway',
+      },
+    },
+  },
   paths: {
     '/v1/budgets': {
       post: {
         summary: 'Create a new budget',
-        description: 'Create a new budget and save it to MongoDB',
+        description: 'Create a new budget. Requires Authorization header with JWT token.',
+        security: [{ bearerAuth: [] }],
         requestBody: {
           required: true,
           content: {
@@ -43,6 +54,7 @@ export const openApiSpec = {
                   properties: {
                     _id: { type: 'string' },
                     groupId: { type: 'string' },
+                    userId: { type: 'string' },
                     category: { type: 'string' },
                     limitAmount: { type: 'number' },
                     period: { type: 'string' },
@@ -51,12 +63,9 @@ export const openApiSpec = {
               },
             },
           },
-          '400': {
-            description: 'Validation error',
-          },
-          '500': {
-            description: 'Server error',
-          },
+          '400': { description: 'Validation error' },
+          '401': { description: 'Authorization required' },
+          '500': { description: 'Server error' },
         },
       },
     },
@@ -111,9 +120,7 @@ export const openApiSpec = {
             name: 'id',
             in: 'path',
             required: true,
-            schema: {
-              type: 'string',
-            },
+            schema: { type: 'string' },
             description: 'The budget ID',
           },
         ],
@@ -131,40 +138,41 @@ export const openApiSpec = {
           },
         },
         responses: {
-          '200': {
-            description: 'Budget updated successfully',
-            content: {
-              'application/json': {
-                schema: {
-                  type: 'object',
-                },
-              },
-            },
+          '200': { description: 'Budget updated successfully' },
+          '400': { description: 'Validation error' },
+          '404': { description: 'Budget not found' },
+          '500': { description: 'Server error' },
+        },
+      },
+      delete: {
+        summary: 'Delete a budget',
+        description: 'Delete a budget by ID',
+        parameters: [
+          {
+            name: 'id',
+            in: 'path',
+            required: true,
+            schema: { type: 'string' },
+            description: 'The budget ID',
           },
-          '404': {
-            description: 'Budget not found',
-          },
-          '400': {
-            description: 'Validation error',
-          },
-          '500': {
-            description: 'Server error',
-          },
+        ],
+        responses: {
+          '200': { description: 'Budget deleted successfully' },
+          '404': { description: 'Budget not found' },
+          '500': { description: 'Server error' },
         },
       },
     },
     '/v1/budgets/{id}/status': {
       get: {
         summary: 'Get budget status',
-        description: 'Get the current status of a budget including spending information',
+        description: 'Get the current status of a budget including spending information (uses Redis cache)',
         parameters: [
           {
             name: 'id',
             in: 'path',
             required: true,
-            schema: {
-              type: 'string',
-            },
+            schema: { type: 'string' },
             description: 'The budget ID',
           },
         ],
@@ -178,21 +186,79 @@ export const openApiSpec = {
                   properties: {
                     limit: { type: 'number' },
                     spent: { type: 'number' },
-                    health: {
-                      type: 'string',
-                      enum: ['OK', 'WARNING', 'OVERBUDGET'],
-                    },
+                    health: { type: 'string', enum: ['OK', 'WARNING', 'OVERBUDGET'] },
                   },
                 },
               },
             },
           },
-          '404': {
-            description: 'Budget not found',
+          '404': { description: 'Budget not found' },
+          '500': { description: 'Failed to calculate status' },
+        },
+      },
+    },
+    '/v1/budgets/{id}/chart': {
+      get: {
+        summary: 'Get budget chart URL',
+        description: 'Generate a QuickChart.io URL for budget visualization. Requires ENABLE_CHARTS=true.',
+        parameters: [
+          {
+            name: 'id',
+            in: 'path',
+            required: true,
+            schema: { type: 'string' },
+            description: 'The budget ID',
           },
-          '500': {
-            description: 'Failed to calculate status',
+        ],
+        responses: {
+          '200': {
+            description: 'Chart URL generated',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    url: { type: 'string', description: 'QuickChart.io URL' },
+                  },
+                },
+              },
+            },
           },
+          '404': { description: 'Budget not found' },
+          '503': { description: 'Feature Disabled (ENABLE_CHARTS=false)' },
+        },
+      },
+    },
+    '/v1/internal/users/{userId}': {
+      delete: {
+        summary: 'SAGA: Delete user budgets',
+        description: 'Internal endpoint for SAGA pattern. Deletes all budgets for a user during user deletion flow.',
+        tags: ['Internal'],
+        parameters: [
+          {
+            name: 'userId',
+            in: 'path',
+            required: true,
+            schema: { type: 'string' },
+            description: 'The user ID',
+          },
+        ],
+        responses: {
+          '200': {
+            description: 'Budgets deleted successfully',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    status: { type: 'string', example: 'ok' },
+                    deletedCount: { type: 'number' },
+                  },
+                },
+              },
+            },
+          },
+          '500': { description: 'SAGA failed' },
         },
       },
     },
