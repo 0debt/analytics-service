@@ -3,7 +3,7 @@ name: Deploy ANALYTICS-SERVICE
 on:
   push:
     tags:
-      - 'v*' # Ejemplo: v1.0.1
+      - 'v*' 
 
 jobs:
   build-and-push-image:
