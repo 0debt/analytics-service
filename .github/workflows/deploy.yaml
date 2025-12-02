@@ -1,20 +1,22 @@
-name: Deploy ANALYTICS-SERVICE 
+name: Deploy ANALYTICS-SERVICE
 
 on:
   push:
     tags:
-      - 'v*'
+      - 'v*' # Ejemplo: v1.0.1
+
 jobs:
   build-and-push-image:
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
+
     steps:
-      - name: Checkout code 
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up QEMU
+      - name: Set up QEMU (para emulación multi-arch)
         uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
@@ -23,18 +25,20 @@ jobs:
       - name: Login to GHCR
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
 
-      - name: Build Docker image
+      - name: Build and push multi-arch image
         run: |
-          docker build -t ghcr.io/${{ github.repository_owner }}/analytics-service:${{ github.ref_name }} .
-          docker tag ghcr.io/${{ github.repository_owner }}/analytics-service:${{ github.ref_name }} ghcr.io/${{ github.repository_owner }}/analytics-service:latest
+          IMAGE=ghcr.io/${{ github.repository_owner }}/analytics-service
+          TAG=${{ github.ref_name }}
+          echo "Building $IMAGE for amd64 and arm64..."
+          docker buildx build \
+            --platform linux/amd64,linux/arm64 \
+            -t $IMAGE:$TAG \
+            -t $IMAGE:latest \
+            --push .
 
-      - name: Push Docker image
+      - name: Trigger deployment (Coolify)
         run: |
-          docker push ghcr.io/${{ github.repository_owner }}/analytics-service:${{ github.ref_name }}
-          docker push ghcr.io/${{ github.repository_owner }}/analytics-service:latest
-      - name: Trigger deployment 
-        run: |
-          echo "Init version ${{ github.ref_name }} deployment..."
+          echo "Triggering Coolify deployment for ${{ github.ref_name }}..."
           curl -X POST \
             -H "Authorization: Bearer ${{ secrets.COOLIFY_API_KEY }}" \
             "${{ secrets.COOLIFY_URL_WH }}"
