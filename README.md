@@ -18,6 +18,7 @@ A microservice for managing budgets and analytics, built with **Bun** and **Hono
 - 🔌 **Circuit Breaker**: Resilient integration with expenses-service (opossum)
 - 📈 **Charts**: QuickChart.io integration with Feature Toggle
 - 🔄 **SAGA Support**: Internal endpoint for distributed transactions
+- 🛡️ **Rate Limit**: Por plan en el endpoint de QuickChart (FREE/PRO/ENTERPRISE)
 - 📚 **API Documentation**: Swagger UI for interactive API testing
 - 🧪 **Testing**: 20+ tests covering all scenarios
 
@@ -123,18 +124,23 @@ Response:
 
 Health values: `OK` (<80%), `WARNING` (80-100%), `OVERBUDGET` (>100%)
 
-### Get Chart URL (Feature Toggle)
+### Get Chart URL (Feature Toggle, default ON)
 
 ```bash
 curl http://localhost:3000/v1/budgets/:id/chart
 ```
 
-Response (if `ENABLE_CHARTS=true`):
+Response (default or `ENABLE_CHARTS` not set, unless explicitly `false`):
 ```json
 {
   "url": "https://quickchart.io/chart?c=..."
 }
 ```
+Rate limit por plan (ventana ~30 días):
+- FREE: 2 req/mes
+- PRO: 15 req/mes
+- ENTERPRISE: 50 req/mes
+Sin token se aplica FREE y se usa IP/userId como clave. Para deshabilitar la feature, define `ENABLE_CHARTS=false`.
 
 ### SAGA: Delete User Budgets
 

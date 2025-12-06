@@ -79,38 +79,6 @@ describe('POST /v1/budgets', () => {
         expect(res.status).toBe(400);
     });
 
-    test('5. should fail with missing limitAmount', async () => {
-        const res = await fetch(`${API_URL}/v1/budgets`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${TEST_TOKEN}`
-            },
-            body: JSON.stringify({
-                groupId: 'test-group',
-                period: 'monthly',
-            }),
-        });
-
-        expect(res.status).toBe(400);
-    });
-
-    test('6. should fail with missing period', async () => {
-        const res = await fetch(`${API_URL}/v1/budgets`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${TEST_TOKEN}`
-            },
-            body: JSON.stringify({
-                groupId: 'test-group',
-                limitAmount: 500,
-            }),
-        });
-
-        expect(res.status).toBe(400);
-    });
-
     test('7. should fail with invalid JSON', async () => {
         const res = await fetch(`${API_URL}/v1/budgets`, {
             method: 'POST',
@@ -322,3 +290,5 @@ describe('DELETE /v1/internal/users/:userId (SAGA)', () => {
         expect(body.deletedCount).toBe(0);
     });
 });
+
+

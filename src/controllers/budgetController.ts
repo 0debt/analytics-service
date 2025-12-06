@@ -184,11 +184,12 @@ export async function deleteBudget(c: Context) {
 
 /**
  * Gets budget chart URL (Feature Toggle).
- * Returns 503 if ENABLE_CHARTS is false.
+ * Returns 503 if ENABLE_CHARTS is explicitly set to "false".
  * @param c - Hono context
  */
 export async function getBudgetChart(c: Context) {
-    if (Bun.env.ENABLE_CHARTS !== 'true') {
+    // Default ON: only disable when explicitly "false"
+    if (Bun.env.ENABLE_CHARTS === 'false') {
         return c.json({ error: 'Feature Disabled' }, 503);
     }
 
