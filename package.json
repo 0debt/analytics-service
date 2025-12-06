@@ -7,7 +7,6 @@
   "dependencies": {
     "@hono/swagger-ui": "^0.5.2",
     "hono": "^4.10.6",
-    "hono-rate-limiter": "^0.4.2",
     "ioredis": "^5.8.2",
     "jwt-decode": "^4.0.0",
     "mongoose": "^9.0.0",
