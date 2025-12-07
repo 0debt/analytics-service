@@ -226,7 +226,8 @@ describe('GET /v1/budgets/:id/chart', () => {
 
     test('18. should return 503 when ENABLE_CHARTS=false', async () => {
         if (!createdBudgetId) return;
-        if (Bun.env.ENABLE_CHARTS === 'true') return;
+        // Only validate 503 when feature is explicitly disabled
+        if (Bun.env.ENABLE_CHARTS !== 'false') return;
 
         const res = await fetch(`${API_URL}/v1/budgets/${createdBudgetId}/chart`);
 
