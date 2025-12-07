@@ -1,7 +1,7 @@
 import type { Context, Next } from 'hono';
 import { getUserContext } from '@/helpers/userContext';
 
-const monthlyMs = 1000 * 60 * 60 * 24 * 30; // ~30 días
+const monthlyMs = 1000 * 60 * 60 * 24 * 30; // ~30 days
 const planLimits = {
     FREE: 2,
     PRO: 15,
@@ -55,5 +55,6 @@ export async function chartRateLimiter(c: Context, next: Next) {
 
     return next();
 }
+
 
 
