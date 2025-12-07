@@ -209,7 +209,22 @@ export async function getBudgetChart(c: Context) {
         const { generateChartUrl } = await import('@/services/chartService');
         const url = generateChartUrl(stats.byCategory);
 
-        return c.json({ url }, 200);
+        // Get the image directly from QuickChart
+        const imageResponse = await fetch(`${url}&format=png`);
+        if (!imageResponse.ok) {
+            console.error('QuickChart error:', imageResponse.status, imageResponse.statusText);
+            return c.json({ error: 'Failed to fetch chart image' }, 502);
+        }
+
+        const contentType = imageResponse.headers.get('content-type') || 'image/png';
+        const buffer = await imageResponse.arrayBuffer();
+
+        return c.newResponse(buffer, {
+            status: 200,
+            headers: {
+                'Content-Type': contentType,
+            },
+        });
     } catch (error) {
         console.error('Error generating chart:', error);
         return c.json({ error: 'Failed to generate chart' }, 500);
