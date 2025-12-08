@@ -55,6 +55,3 @@ export async function chartRateLimiter(c: Context, next: Next) {
 
     return next();
 }
-
-
-

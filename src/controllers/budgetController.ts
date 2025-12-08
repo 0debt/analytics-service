@@ -194,6 +194,12 @@ export async function getBudgetChart(c: Context) {
     }
 
     try {
+        const userContext = getUserContext(c);
+        const plan = userContext?.plan?.toUpperCase() || 'FREE';
+        if (plan !== 'PRO' && plan !== 'ENTERPRISE') {
+            return c.json({ error: 'Charts available for PRO/ENTERPRISE plans' }, 403);
+        }
+
         const budgetId = c.req.param('id');
         const budget = await Budget.findById(budgetId);
 
@@ -209,7 +215,7 @@ export async function getBudgetChart(c: Context) {
         const { generateChartUrl } = await import('@/services/chartService');
         const url = generateChartUrl(stats.byCategory);
 
-        // Get the image directly from QuickChart
+        // Obtener la imagen directamente desde QuickChart
         const imageResponse = await fetch(`${url}&format=png`);
         if (!imageResponse.ok) {
             console.error('QuickChart error:', imageResponse.status, imageResponse.statusText);
