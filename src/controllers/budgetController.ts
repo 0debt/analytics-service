@@ -110,7 +110,7 @@ export async function updateBudget(c: Context) {
 
 /**
  * Gets budget status with Cache-Aside pattern.
- * Caches expenses data in Redis with 60s TTL.
+ * Caches expenses data in Redis with 5s TTL.
  * @param c - Hono context
  */
 export async function getBudgetStatus(c: Context) {
@@ -134,7 +134,7 @@ export async function getBudgetStatus(c: Context) {
             } else {
                 console.log(`Cache MISS for group ${budget.groupId}`);
                 spent = await getTotalSpent(budget.groupId);
-                await redis.set(cacheKey, JSON.stringify({ totalSpent: spent }), 'EX', 60);
+                await redis.set(cacheKey, JSON.stringify({ totalSpent: spent }), 'EX', 5);
             }
         } catch {
             // Redis unavailable, fetch directly
