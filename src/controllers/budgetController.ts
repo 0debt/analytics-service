@@ -1,6 +1,6 @@
 import { Context } from 'hono';
 import { Budget } from '@/models/budgetSchema';
-import { getGroupStats, getTotalSpent } from '@/clients/expensesClient';
+import { getGroupStats } from '@/clients/expensesClient';
 import { getUserContext } from '@/helpers/userContext';
 import { redis } from '@/config/redis';
 
@@ -122,23 +122,47 @@ export async function getBudgetStatus(c: Context) {
             return c.json({ error: 'Budget not found' }, 404);
         }
 
-        const cacheKey = `analytics:budget:spent:${budget.groupId}`;
+        const cacheKey = `analytics:budget:stats:${budget.groupId}`;
         let spent: number;
 
         // Cache-Aside: Try cache first (graceful if Redis unavailable)
         try {
             const cachedData = await redis.get(cacheKey);
+            let stats;
+            
             if (cachedData) {
                 console.log(`Cache HIT for group ${budget.groupId}`);
-                spent = JSON.parse(cachedData).totalSpent;
+                stats = JSON.parse(cachedData);
             } else {
                 console.log(`Cache MISS for group ${budget.groupId}`);
-                spent = await getTotalSpent(budget.groupId);
-                await redis.set(cacheKey, JSON.stringify({ totalSpent: spent }), 'EX', 5);
+                stats = await getGroupStats(budget.groupId);
+                if (stats) {
+                    await redis.set(cacheKey, JSON.stringify(stats), 'EX', 5);
+                }
+            }
+
+            // Calcular spent según la categoría del presupuesto
+            if (!stats) {
+                spent = 0;
+            } else if (budget.category) {
+                // Si el presupuesto tiene categoría, buscamos el gasto específico
+                const categoryKey = budget.category.toUpperCase();
+                spent = stats.byCategory[categoryKey] || 0;
+            } else {
+                // Si no tiene categoría, usamos el total global
+                spent = stats.totalSpent;
             }
         } catch {
             // Redis unavailable, fetch directly
-            spent = await getTotalSpent(budget.groupId);
+            const stats = await getGroupStats(budget.groupId);
+            if (!stats) {
+                spent = 0;
+            } else if (budget.category) {
+                const categoryKey = budget.category.toUpperCase();
+                spent = stats.byCategory[categoryKey] || 0;
+            } else {
+                spent = stats.totalSpent;
+            }
         }
 
         // Calculate health status
