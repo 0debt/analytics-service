@@ -1,6 +1,6 @@
 # Analytics service
 
-> **Documento de evaluacion:** Ver [criterio-valoracion-microservicio.md](./criterio-valoracion-microservicio.md) para el detalle de todos los requisitos implementados, su ubicacion en el codigo y la nota a la que se opta.
+> **Documento de evaluacion:** Ver [documento-entrega.md](./documento-entrega.md) para el detalle de todos los requisitos implementados, su ubicacion en el codigo y la nota a la que se opta.
 
 A microservice for managing budgets and analytics, built with **Bun** and **Hono**. Part of the **0debt** project.
 
@@ -235,7 +235,7 @@ analytics-service/
 │       └── budget.test.ts    # 20 integration tests
 ├── Dockerfile                # Docker image
 ├── package.json
-├── criterio-valoracion-microservicio.md  # Evaluation criteria
+├── documento-entrega.md              # Evaluation criteria
 └── README.md
 ```
 

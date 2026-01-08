@@ -1,12 +1,134 @@
-# Criterios de valoracion - Analytics service
+# Documento de entrega - Analytics service
 
-Este documento detalla todos los requisitos del proyecto, donde se han implementado en el codigo y la nota a la que se opta.
+**Autores:** Jorge Florentino Serra y Maria Luisa Rodriguez Cabrera
 
 ---
 
-## Requisitos base (Microservicio)
+## 1. Nivel de acabado
 
-### 1. API REST con metodos GET, POST, PUT y DELETE
+**Nota a la que se opta:** 10
+
+Se han implementado todos los requisitos base del microservicio y los 6 requisitos avanzados necesarios para optar a la maxima calificacion.
+
+---
+
+## 2. Descripcion de la aplicacion
+
+**0debt** es una plataforma financiera distribuida construida con principios cloud-native modernos que resuelve la gestion de gastos compartidos mediante una arquitectura de microservicios resilientes.
+
+La plataforma permite a los usuarios:
+- Gestionar gastos compartidos en grupos
+- Simplificar deudas entre miembros
+- Establecer y monitorizar presupuestos
+- Visualizar analiticas de gastos
+- Recibir notificaciones de actividad
+
+---
+
+## 3. Descomposicion en microservicios
+
+La plataforma se organiza en servicios debilmente acoplados que se comunican via HTTP y Redis Pub/Sub:
+
+### Servicios principales
+
+| Servicio | Descripcion | Repositorio |
+|----------|-------------|-------------|
+| **users-service** | Gestiona identidad, autenticacion JWT y planes de suscripcion | [0debt/users-service](https://github.com/0debt/users-service) |
+| **groups-service** | Administra espacios colaborativos y membresias | [0debt/groups-service](https://github.com/0debt/groups-service) |
+| **expenses-service** | Motor financiero que ejecuta el algoritmo de simplificacion de deudas (patron Saga) | [0debt/expenses-service](https://github.com/0debt/expenses-service) |
+
+### Servicios de negocio y soporte
+
+| Servicio | Descripcion | Repositorio |
+|----------|-------------|-------------|
+| **analytics-service** | Genera reportes financieros e informacion de presupuestos | [0debt/analytics-service](https://github.com/0debt/analytics-service) |
+| **notifications-service** | Servicio orientado a eventos para emails transaccionales via Resend | [0debt/notifications-service](https://github.com/0debt/notifications-service) |
+
+### Infraestructura
+
+| Componente | Descripcion | Repositorio |
+|------------|-------------|-------------|
+| **api-gateway** | Punto de entrada construido con Hono, maneja routing y rate limiting global | [0debt/api-gateway](https://github.com/0debt/api-gateway) |
+| **0debt-frontend** | SPA moderna con Next.js, Shadcn UI y TailwindCSS | [0debt/frontend](https://github.com/0debt/frontend) |
+| **0debt-infra** | Configuracion de infraestructura y documentacion | [0debt/0debt-infra](https://github.com/0debt/0debt-infra) |
+
+### Microservicio implementado por la pareja
+
+**analytics-service** - Servicio de analiticas y presupuestos
+
+Este microservicio se encarga de:
+- Gestion de presupuestos (CRUD completo)
+- Calculo del estado de presupuestos (consumido vs limite)
+- Generacion de graficos de gastos por categoria (QuickChart.io)
+- Rate limiting por plan de usuario
+- Integracion resiliente con expenses-service (circuit breaker)
+
+Repositorio: https://github.com/0debt/analytics-service
+
+---
+
+## 4. Customer agreement
+
+El acuerdo de cliente de la aplicacion se encuentra documentado en:
+
+https://github.com/0debt/0debt-infra/blob/main/docs/agreements/customer-agreement.md
+
+---
+
+## 5. Descripcion del API REST
+
+### Endpoints disponibles
+
+| Metodo | Endpoint | Descripcion | Auth |
+|--------|----------|-------------|------|
+| GET | `/v1/health` | Health check del servicio | No |
+| POST | `/v1/budgets` | Crear un nuevo presupuesto | Si (JWT) |
+| GET | `/v1/budgets/group/:groupId` | Listar presupuestos de un grupo | No |
+| PUT | `/v1/budgets/:id` | Actualizar limite de presupuesto | No |
+| DELETE | `/v1/budgets/:id` | Eliminar presupuesto | No |
+| GET | `/v1/budgets/:id/status` | Obtener estado del presupuesto (con cache) | No |
+| GET | `/v1/budgets/:id/chart` | Obtener grafico de gastos (rate limited) | Si (JWT) |
+| DELETE | `/v1/internal/users/:userId` | SAGA: Eliminar datos de usuario | Interno |
+
+### Documentacion interactiva
+
+- **Swagger UI:** `/swagger`
+- **OpenAPI JSON:** `/docs`
+
+### Modelo de datos (Budget)
+
+```typescript
+{
+  _id: ObjectId,
+  groupId: string,      // ID del grupo
+  userId: string,       // ID del usuario creador
+  category?: string,    // Categoria opcional (FOOD, TRANSPORT, etc.)
+  limitAmount: number,  // Limite del presupuesto (min: 0)
+  period: string,       // Periodo (monthly, weekly, trip)
+  createdAt: Date,
+  updatedAt: Date
+}
+```
+
+### Respuesta de estado del presupuesto
+
+```json
+{
+  "limit": 500,
+  "spent": 150.00,
+  "health": "OK"
+}
+```
+
+Valores de `health`: `OK` (<80%), `WARNING` (80-100%), `OVERBUDGET` (>100%)
+
+---
+
+## 6. Justificacion de requisitos
+
+### Requisitos base (Microservicio)
+
+#### 6.1. API REST con metodos GET, POST, PUT y DELETE
 
 **Estado:** Implementado
 
@@ -33,7 +155,7 @@ Este documento detalla todos los requisitos del proyecto, donde se han implement
 
 ---
 
-### 2. Mecanismo de autenticacion (JWT con claim `plan`)
+#### 6.2. Mecanismo de autenticacion (JWT con claim `plan`)
 
 **Estado:** Implementado
 
@@ -58,7 +180,7 @@ return {
 
 ---
 
-### 3. Frontend integrado
+#### 6.3. Frontend integrado
 
 **Estado:** Implementado
 
@@ -66,7 +188,7 @@ return {
 
 ---
 
-### 4. Desplegado en la nube
+#### 6.4. Desplegado en la nube
 
 **Estado:** Implementado
 
@@ -77,7 +199,7 @@ return {
 
 ---
 
-### 5. API versionada
+#### 6.5. API versionada
 
 **Estado:** Implementado
 
@@ -95,7 +217,7 @@ return {
 
 ---
 
-### 6. Documentacion de la API (Swagger/OpenAPI)
+#### 6.6. Documentacion de la API (Swagger/OpenAPI)
 
 **Estado:** Implementado
 
@@ -110,7 +232,7 @@ return {
 
 ---
 
-### 7. Persistencia con MongoDB (NoSQL)
+#### 6.7. Persistencia con MongoDB (NoSQL)
 
 **Estado:** Implementado
 
@@ -122,7 +244,7 @@ return {
 
 ---
 
-### 8. Validacion de datos con Mongoose
+#### 6.8. Validacion de datos con Mongoose
 
 **Estado:** Implementado
 
@@ -146,7 +268,7 @@ const budgetSchema = new Schema<IBudget>({
 
 ---
 
-### 9. Imagen docker
+#### 6.9. Imagen docker
 
 **Estado:** Implementado
 
@@ -166,7 +288,7 @@ CMD ["bun", "run", "src/server.ts"]
 
 ---
 
-### 10. Gestion del codigo con GitHub Flow
+#### 6.10. Gestion del codigo con GitHub Flow
 
 **Estado:** Implementado
 
@@ -174,13 +296,15 @@ CMD ["bun", "run", "src/server.ts"]
 
 ---
 
-### 11. Integracion continua (CI/CD)
+#### 6.11. Integracion continua (CI/CD)
 
 **Estado:** Implementado
 
 **Ubicacion:**
 - `.github/workflows/deploy.yaml` - Build y deploy en cada tag `v*`
 - `.github/workflows/test.yaml` - Ejecucion de tests en cada tag `v*`
+
+**Verificacion:** Se pueden ver los tests pasando antes de cada deploy en la pestaña Actions del repositorio: https://github.com/0debt/analytics-service/actions
 
 **Pipeline:**
 1. Checkout codigo
@@ -190,7 +314,7 @@ CMD ["bun", "run", "src/server.ts"]
 
 ---
 
-### 12. Pruebas de componente (minimo 20 tests)
+#### 6.12. Pruebas de componente (minimo 20 tests)
 
 **Estado:** Implementado (20 tests)
 
@@ -227,9 +351,9 @@ CMD ["bun", "run", "src/server.ts"]
 
 ---
 
-## Requisitos avanzados (6 para el 10)
+### Requisitos avanzados (6 para el 10)
 
-### 1. Frontend con rutas y navegacion
+#### 6.13. Frontend con rutas y navegacion
 
 **Estado:** Implementado
 
@@ -237,7 +361,7 @@ CMD ["bun", "run", "src/server.ts"]
 
 ---
 
-### 2. Cache para optimizar acceso a datos (Redis)
+#### 6.14. Cache para optimizar acceso a datos (Redis)
 
 **Estado:** Implementado
 
@@ -269,7 +393,7 @@ if (cachedData) {
 
 ---
 
-### 3. Consumo de API externa (QuickChart.io)
+#### 6.15. Consumo de API externa (QuickChart.io)
 
 **Estado:** Implementado
 
@@ -298,7 +422,7 @@ export function generateChartUrl(data: Record<string, number>): string {
 
 ---
 
-### 4. Patron rate limit para servicios externos
+#### 6.16. Patron rate limit para servicios externos
 
 **Estado:** Implementado
 
@@ -323,7 +447,7 @@ const planLimits = {
 
 ---
 
-### 5. Autenticacion basada en JWT
+#### 6.17. Autenticacion basada en JWT
 
 **Estado:** Implementado
 
@@ -338,7 +462,7 @@ const planLimits = {
 
 ---
 
-### 6. Patron circuit breaker
+#### 6.18. Patron circuit breaker
 
 **Estado:** Implementado
 
@@ -375,7 +499,7 @@ breaker.on('close', () => console.log('Circuit Breaker CLOSED: expenses-service 
 
 ---
 
-## Resumen de nota
+## 7. Resumen de nota
 
 | Requisito | Estado | Puntos |
 |-----------|--------|--------|
@@ -406,7 +530,49 @@ breaker.on('close', () => console.log('Circuit Breaker CLOSED: expenses-service 
 
 ---
 
-## Estructura del proyecto
+## 8. Analisis de esfuerzos
+
+El tiempo dedicado al proyecto se ha registrado con Clockify. A continuacion se muestran las capturas semanales de las horas invertidas:
+
+---
+
+## 9. Uso de IA en el proyecto
+
+Se ha utilizado inteligencia artificial como herramienta de apoyo durante el desarrollo del proyecto. A continuacion se detallan los usos principales:
+
+### Generacion de tests
+
+La IA ha sido utilizada para generar tests de integracion basados en el codigo existente. Se le proporcionaba el codigo fuente completo y generaba tests que cubrian tanto escenarios positivos como negativos, asegurando una cobertura completa de la funcionalidad.
+
+### Generacion de JSDoc
+
+Se ha utilizado IA para generar documentacion JSDoc para todas las funciones del proyecto, mejorando la mantenibilidad y comprension del codigo.
+
+### Alineacion entre microservicios
+
+Este ha sido el uso mas importante de la IA en el proyecto. Se ha utilizado para alinear el microservicio analytics-service con el resto de microservicios del ecosistema 0debt, asegurando:
+- Consistencia en los contratos de API
+- Compatibilidad con el frontend
+- Integracion correcta con expenses-service
+- Formato uniforme de respuestas
+
+### Herramienta repomix
+
+Se ha utilizado **repomix** (https://github.com/yamadashy/repomix) como herramienta complementaria para el trabajo con IA. Repomix es una utilidad que empaqueta todo el contenido de un repositorio en un unico archivo de texto optimizado para ser procesado por modelos de lenguaje. Esto permite:
+
+- Proporcionar contexto completo del proyecto a la IA en una sola consulta
+- Mantener la estructura y relaciones entre archivos
+- Facilitar el analisis de codigo y la generacion de sugerencias coherentes con el proyecto
+- Optimizar el uso de tokens al eliminar contenido innecesario (node_modules, archivos binarios, etc.)
+
+Comando utilizado:
+```bash
+repomix --output repomix-output.txt
+```
+
+---
+
+## 10. Estructura del proyecto
 
 ```
 analytics-service/
@@ -440,5 +606,5 @@ analytics-service/
 ├── Dockerfile                   # Imagen Docker
 ├── package.json                 # Dependencias
 ├── README.md                    # Documentacion principal
-└── criterio-valoracion-microservicio.md  # Este documento
+└── documento-entrega.md         # Este documento
 ```
