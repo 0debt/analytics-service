@@ -530,9 +530,11 @@ breaker.on('close', () => console.log('Circuit Breaker CLOSED: expenses-service 
 
 ---
 
-## 8. Analisis de esfuerzos
+## 8. Analisis de horas clockify 1Nov-8Ene
 
-El tiempo dedicado al proyecto se ha registrado con Clockify. A continuacion se muestran las capturas semanales de las horas invertidas:
+Total en clockify: 43:58:09 
+
+<img width="2076" height="519" alt="image" src="https://github.com/user-attachments/assets/50ecec3d-c936-4850-ab4e-103073791ecc" />
 
 ---
 
