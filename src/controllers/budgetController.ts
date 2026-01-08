@@ -141,15 +141,15 @@ export async function getBudgetStatus(c: Context) {
                 }
             }
 
-            // Calcular spent según la categoría del presupuesto
+            // Calculate spent based on budget category
             if (!stats) {
                 spent = 0;
             } else if (budget.category) {
-                // Si el presupuesto tiene categoría, buscamos el gasto específico
+                // Budget has category, get category-specific spent
                 const categoryKey = budget.category.toUpperCase();
                 spent = stats.byCategory[categoryKey] || 0;
             } else {
-                // Si no tiene categoría, usamos el total global
+                // No category, use total spent
                 spent = stats.totalSpent;
             }
         } catch {
