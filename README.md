@@ -1,4 +1,6 @@
-# Analytics Service
+# Analytics service
+
+> **Documento de evaluacion:** Ver [criterio-valoracion-microservicio.md](./criterio-valoracion-microservicio.md) para el detalle de todos los requisitos implementados, su ubicacion en el codigo y la nota a la que se opta.
 
 A microservice for managing budgets and analytics, built with **Bun** and **Hono**. Part of the **0debt** project.
 
@@ -14,7 +16,7 @@ A microservice for managing budgets and analytics, built with **Bun** and **Hono
 - 🚀 **Fast**: Built on Bun runtime for optimal performance
 - 📊 **Budget Management**: Create, update, delete, and monitor budgets
 - 🔐 **JWT Auth**: User identification via Kong Gateway (Trust the Gateway)
-- ⚡ **Redis Cache**: Cache-Aside pattern with 60s TTL
+- ⚡ **Redis Cache**: Cache-Aside pattern with 5s TTL
 - 🔌 **Circuit Breaker**: Resilient integration with expenses-service (opossum)
 - 📈 **Charts**: QuickChart.io integration with Feature Toggle
 - 🔄 **SAGA Support**: Internal endpoint for distributed transactions
@@ -22,7 +24,7 @@ A microservice for managing budgets and analytics, built with **Bun** and **Hono
 - 📚 **API Documentation**: Swagger UI for interactive API testing
 - 🧪 **Testing**: 20+ tests covering all scenarios
 
-## Tech Stack
+## Tech stack
 
 | Component | Technology |
 |-----------|------------|
@@ -62,7 +64,7 @@ EXPENSES_SERVICE_URL=http://localhost:3000 # Without URL = mock data
 ENABLE_CHARTS=true                         # Without = feature disabled
 ```
 
-### Database Selection
+### Database selection
 
 Based on `NODE_ENV`:
 - `development` → `dev` database
@@ -85,7 +87,7 @@ Server starts on `http://localhost:3000`
 NODE_ENV=production bun run src/server.ts
 ```
 
-## API Endpoints
+## API endpoints
 
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
@@ -98,7 +100,7 @@ NODE_ENV=production bun run src/server.ts
 | GET | `/v1/budgets/:id/chart` | Get chart URL | No |
 | DELETE | `/v1/internal/users/:userId` | SAGA: Delete user data | Internal |
 
-### Create Budget (requires JWT)
+### Create budget (requires JWT)
 
 ```bash
 curl -X POST http://localhost:3000/v1/budgets \
@@ -107,7 +109,7 @@ curl -X POST http://localhost:3000/v1/budgets \
   -d '{"groupId":"group-123","category":"Food","limitAmount":500,"period":"monthly"}'
 ```
 
-### Get Budget Status
+### Get budget status
 
 ```bash
 curl http://localhost:3000/v1/budgets/:id/status
@@ -124,7 +126,7 @@ Response:
 
 Health values: `OK` (<80%), `WARNING` (80-100%), `OVERBUDGET` (>100%)
 
-### Get Chart URL (Feature Toggle, default ON)
+### Get chart URL (feature toggle, default ON)
 
 ```bash
 curl http://localhost:3000/v1/budgets/:id/chart
@@ -142,7 +144,7 @@ Rate limit por plan (middleware propio, ventana mensual ~30 días):
 - ENTERPRISE: 50 req/mes
 Sin token se aplica FREE y se usa IP/userId como clave. Para deshabilitar la feature, define `ENABLE_CHARTS=false`.
 
-### SAGA: Delete User Budgets
+### SAGA: Delete user budgets
 
 ```bash
 curl -X DELETE http://localhost:3000/v1/internal/users/:userId
@@ -175,7 +177,7 @@ See [plan-phases.md](./plan-phases.md) for detailed diagrams and implementation 
              └─────────────┘           └─────────────┘           └─────────────┘
 ```
 
-## API Documentation
+## API documentation
 
 - **Swagger UI**: `http://localhost:3000/swagger`
 - **OpenAPI JSON**: `http://localhost:3000/docs`
@@ -190,7 +192,7 @@ bun run dev
 API_URL=http://localhost:3000 bun test
 ```
 
-### Test Coverage (20 tests)
+### Test coverage (20 tests)
 
 - ✅ Health check
 - ✅ Budget CRUD operations
@@ -200,35 +202,44 @@ API_URL=http://localhost:3000 bun test
 - ✅ SAGA participation
 - ✅ Input validation
 
-## Project Structure
+## Project structure
 
 ```
 analytics-service/
+├── .github/
+│   └── workflows/
+│       ├── deploy.yaml       # CI/CD: Build + Deploy to Coolify
+│       └── test.yaml         # CI: Run tests on tag
 ├── src/
+│   ├── clients/
+│   │   └── expensesClient.ts # Circuit Breaker client
 │   ├── config/
 │   │   ├── database.ts       # MongoDB connection
-│   │   ├── redis.ts          # Redis connection + retry
-│   │   └── openapi.ts        # OpenAPI specification
+│   │   ├── openapi.ts        # OpenAPI specification
+│   │   └── redis.ts          # Redis connection + retry
 │   ├── controllers/
 │   │   └── budgetController.ts  # All budget handlers
 │   ├── helpers/
 │   │   └── userContext.ts    # JWT decode helper
-│   ├── services/
-│   │   └── chartService.ts   # QuickChart URL generator
-│   ├── clients/
-│   │   └── expensesClient.ts # Circuit Breaker client
+│   ├── middleware/
+│   │   └── chartRateLimiter.ts  # Rate limit by plan
 │   ├── models/
-│   │   ├── budgetSchema.ts   # Mongoose schema
-│   │   └── budget.test.ts    # Test suite
+│   │   └── budgetSchema.ts   # Mongoose schema
 │   ├── routes/
 │   │   └── budgets.ts        # Route definitions
+│   ├── services/
+│   │   └── chartService.ts   # QuickChart URL generator
 │   └── server.ts             # Entry point
-├── plan-phases.md            # Implementation documentation
+├── tests/
+│   └── integration/
+│       └── budget.test.ts    # 20 integration tests
+├── Dockerfile                # Docker image
 ├── package.json
+├── criterio-valoracion-microservicio.md  # Evaluation criteria
 └── README.md
 ```
 
-## Resilience Patterns
+## Resilience patterns
 
 ### Circuit Breaker (expenses-service)
 
@@ -239,8 +250,8 @@ analytics-service/
 
 ### Cache-Aside (Redis)
 
-- **TTL**: 60 seconds
-- **Key**: `analytics:budget:spent:{groupId}`
+- **TTL**: 5 seconds
+- **Key**: `analytics:budget:stats:{groupId}`
 - **Graceful**: Works without Redis (cache disabled)
 
 ## License
