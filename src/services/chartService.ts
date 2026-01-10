@@ -1,10 +1,10 @@
 /**
- * Generates a QuickChart.io URL for a pie chart.
+ * Generates a QuickChart.io URL for a pie chart with white text for dark themes.
  * @param data - Category to amount mapping
  * @returns Chart URL string
  */
 export function generateChartUrl(data: Record<string, number>): string {
-    // 1. Filtrar valores menores a 0.01 (limpia basura decimal y ceros)
+    // Filter values less than 0.01
     const cleanData = Object.entries(data)
         .filter(([_, value]) => value > 0.01)
         .reduce((acc, [key, val]) => ({ ...acc, [key]: val }), {});
@@ -17,6 +17,28 @@ export function generateChartUrl(data: Record<string, number>): string {
         data: {
             labels,
             datasets: [{ data: values }]
+        },
+        options: {
+            // Legend configuration 
+            legend: {
+                labels: {
+                    fontColor: '#FFFFFF',
+                    fontSize: 14,
+                    fontStyle: 'bold'
+                }
+            },
+            // Data labels plugin configuration
+            plugins: {
+                datalabels: {
+                    color: '#FFFFFF',
+                    anchor: 'center',
+                    align: 'center',
+                    font: {
+                        size: 14,
+                        weight: 'bold'
+                    }
+                }
+            }
         }
     };
 
